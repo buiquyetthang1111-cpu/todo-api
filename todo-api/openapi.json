@@ -1,0 +1,280 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Todo API",
+    "version": "1.0.0",
+    "description": "A RESTful API for managing a Todo list. Each todo has a state (`todo`, `doing` or `done`).\n\nData is kept in memory and is reset when the server restarts. `GET /todos` can return JSON (default) or CSV, depending on the `Accept` header."
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Local development server" }
+  ],
+  "tags": [
+    { "name": "Todos", "description": "Operations on todo items" }
+  ],
+  "paths": {
+    "/todos": {
+      "get": {
+        "tags": ["Todos"],
+        "summary": "List all todos",
+        "description": "Returns all todos, optionally filtered by state. The representation is chosen with the `Accept` header: `application/json` (default) or `text/csv`. Any other type gives `406`.",
+        "operationId": "listTodos",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "description": "Filter todos by state",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/State" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of todos",
+            "headers": {
+              "Vary": {
+                "description": "Always `Accept`, because the body depends on the Accept header",
+                "schema": { "type": "string", "example": "Accept" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Todo" }
+                }
+              },
+              "text/csv": {
+                "schema": { "type": "string" },
+                "example": "id,title,description,state,dueDate,createdAt,updatedAt\n3f0c5c1e-8f7a-4a43-9d57-0c3a1d9f2a11,Write API documentation,\"OpenAPI + README examples, with a comma\",done,2026-12-01,2026-11-25T16:00:00.000Z,2026-11-25T16:10:00.000Z"
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "406": { "$ref": "#/components/responses/NotAcceptable" }
+        }
+      },
+      "post": {
+        "tags": ["Todos"],
+        "summary": "Create a todo",
+        "operationId": "createTodo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewTodo" },
+              "example": {
+                "title": "Write API documentation",
+                "description": "OpenAPI + README examples",
+                "state": "todo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created todo",
+            "headers": {
+              "Location": {
+                "description": "URL of the new todo",
+                "schema": { "type": "string", "example": "/todos/3f0c5c1e-8f7a-4a43-9d57-0c3a1d9f2a11" }
+              }
+            },
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Todo" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "415": { "$ref": "#/components/responses/UnsupportedMediaType" }
+        }
+      }
+    },
+    "/todos/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "Id of the todo",
+          "required": true,
+          "schema": { "type": "string" },
+          "example": "3f0c5c1e-8f7a-4a43-9d57-0c3a1d9f2a11"
+        }
+      ],
+      "get": {
+        "tags": ["Todos"],
+        "summary": "Get a single todo",
+        "operationId": "getTodo",
+        "responses": {
+          "200": {
+            "description": "The requested todo",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Todo" } }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Todos"],
+        "summary": "Update a todo",
+        "description": "Updates the given fields and leaves the others unchanged. At least one field is required. Optional fields can be cleared by sending `null`. Returns the complete todo.",
+        "operationId": "updateTodo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateTodo" },
+              "example": { "state": "doing" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated todo with all its attributes",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Todo" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "415": { "$ref": "#/components/responses/UnsupportedMediaType" }
+        }
+      },
+      "patch": {
+        "tags": ["Todos"],
+        "summary": "Update a todo (same as PUT)",
+        "description": "Behaves exactly like `PUT /todos/{id}`.",
+        "operationId": "patchTodo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateTodo" },
+              "example": { "state": "done" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated todo with all its attributes",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Todo" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "415": { "$ref": "#/components/responses/UnsupportedMediaType" }
+        }
+      },
+      "delete": {
+        "tags": ["Todos"],
+        "summary": "Delete a todo",
+        "operationId": "deleteTodo",
+        "responses": {
+          "204": { "description": "The todo was deleted (no body)" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "State": {
+        "type": "string",
+        "enum": ["todo", "doing", "done"],
+        "description": "Progress state of a todo"
+      },
+      "Todo": {
+        "type": "object",
+        "required": ["id", "title", "state", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "example": "3f0c5c1e-8f7a-4a43-9d57-0c3a1d9f2a11" },
+          "title": { "type": "string", "example": "Write API documentation" },
+          "description": { "type": "string", "nullable": true, "example": "OpenAPI + README examples" },
+          "state": { "$ref": "#/components/schemas/State" },
+          "dueDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date or date-time",
+            "example": "2026-12-01"
+          },
+          "createdAt": { "type": "string", "format": "date-time", "example": "2026-11-25T16:00:00.000Z" },
+          "updatedAt": { "type": "string", "format": "date-time", "example": "2026-11-25T16:00:00.000Z" }
+        }
+      },
+      "NewTodo": {
+        "type": "object",
+        "required": ["title"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string", "nullable": true, "maxLength": 2000 },
+          "state": { "$ref": "#/components/schemas/State" },
+          "dueDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date (YYYY-MM-DD) or date-time",
+            "example": "2026-12-01"
+          }
+        }
+      },
+      "UpdateTodo": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": "string", "nullable": true, "maxLength": 2000 },
+          "state": { "$ref": "#/components/schemas/State" },
+          "dueDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date (YYYY-MM-DD) or date-time",
+            "example": "2026-12-01"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error", "message"],
+        "properties": {
+          "error": { "type": "string", "example": "Bad Request" },
+          "message": { "type": "string", "example": "Validation failed" },
+          "details": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["state must be one of: todo, doing, done"]
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid input: malformed JSON, missing or invalid fields, or an invalid `state` filter",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      },
+      "NotFound": {
+        "description": "No todo exists with the given id",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Not Found", "message": "Todo with id \"1000\" not found" }
+          }
+        }
+      },
+      "NotAcceptable": {
+        "description": "The Accept header allows neither `application/json` nor `text/csv`",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "The request body must be sent as `application/json`",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      }
+    }
+  }
+}
